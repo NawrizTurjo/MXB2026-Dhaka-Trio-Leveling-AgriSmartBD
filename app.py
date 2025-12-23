@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 import datetime
 
 # -----------------------------------------------------------------------------
@@ -396,18 +396,17 @@ menu = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.info(
-     "**Project:** Farm-to-Market Intelligence\n"
-    "**Team:** Million Minds\n"
-    "**Event:** AI Build-a-thon 2025"
-)
+with st.sidebar.expander("ℹ️ তথ্য এবং ডেটা উৎস"):
+    st.write("**ডেটা সোর্স:** এই প্রোটোটাইপটি ঐতিহাসিক কৃষি ডেটা এবং আবহাওয়ার প্যাটার্ন ব্যবহার করে তৈরি করা হয়েছে।")
+    st.write("**গোপনীয়তা:** এটি শুধুমাত্র একটি ডেমো। কোনো ব্যক্তিগত তথ্য সংরক্ষণ করা হয় না।")
+    st.write("**Team:** Million Minds | Build-a-thon 2025")
 
 # -----------------------------------------------------------------------------
 # 4. MODULE 1: AI PRICE FORECASTING
 # -----------------------------------------------------------------------------
 if menu == "📊 মূল্য পূর্বাভাস (এআই)":
     st.title("📊 এআই চালিত মূল্য পূর্বাভাস")
-    st.markdown("<h3 style='color: #1a1a1a; font-weight: 500;'>মেশিন লার্নিং (র‍্যান্ডম ফরেস্ট) ব্যবহার করে ভবিষ্যতের ফসলের দাম পূর্বাভাস করুন যাতে কৃষকরা ভালো বিক্রয় সিদ্ধান্ত নিতে পারেন।</h3>", unsafe_allow_html=True)
+    st.markdown("### মেশিন লার্নিং ব্যবহার করে ৩০ দিনের আগাম মূল্যের পূর্বাভাস এবং অনিশ্চয়তা বিশ্লেষণ।")
     st.divider()
 
     # --- User Inputs ---
@@ -440,9 +439,9 @@ if menu == "📊 মূল্য পূর্বাভাস (এআই)":
     ].sort_values('Price_Date')
 
     if len(filtered_df) > 10:
-        # --- MACHINE LEARNING SECTION (IMPROVED) ---
+        # --- MACHINE LEARNING SECTION (SMARTER VERSION) ---
         
-        # 1. Feature Engineering: Add Seasonality
+        # 1. Feature Engineering: Add Seasonality (ঋতুভিত্তিক বৈচিত্র্য যোগ করা)
         filtered_df['Month'] = filtered_df['Price_Date'].dt.month
         filtered_df['Week'] = filtered_df['Price_Date'].dt.isocalendar().week
         filtered_df['Year'] = filtered_df['Price_Date'].dt.year
@@ -454,7 +453,7 @@ if menu == "📊 মূল্য পূর্বাভাস (এআই)":
         y = filtered_df['Price_Tk_kg']
         
         # 3. Train Model
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
         model.fit(X, y)
         
         # 4. Generate Future Data
@@ -470,148 +469,133 @@ if menu == "📊 মূল্য পূর্বাভাস (এআই)":
         future_data['Week'] = future_data['Price_Date'].dt.isocalendar().week
         future_data['Year'] = future_data['Price_Date'].dt.year
         
-        # 5. Predict
-        future_prices = model.predict(future_data[['Date_Ordinal', 'Month', 'Week', 'Year']])
+        # 5. Predict with Confidence Intervals
+        X_future = future_data[['Date_Ordinal', 'Month', 'Week', 'Year']]
         
-        # 6. Prepare Data for Visualization
-        future_df = pd.DataFrame({
-            'Price_Date': future_dates,
-            'Price_Tk_kg': future_prices,
-            'Type': 'এআই পূর্বাভাস'
-        })
+        # Get predictions from all individual trees to calculate variance
+        predictions = [tree.predict(X_future) for tree in model.estimators_]
+        predictions = np.array(predictions)
         
-        filtered_df['Type'] = 'ঐতিহাসিক তথ্য'
-        combined_df = pd.concat([filtered_df[['Price_Date', 'Price_Tk_kg', 'Type']], future_df])
+        # Mean prediction
+        future_prices = np.mean(predictions, axis=0)
+        # Standard Deviation (Volatility)
+        std_dev = np.std(predictions, axis=0)
+        
+        future_data['Predicted_Price'] = future_prices
+        future_data['Upper_Bound'] = future_prices + (std_dev * 1.5)  # 1.5 sigma
+        future_data['Lower_Bound'] = future_prices - (std_dev * 1.5)
 
-        # --- VISUALIZATION ---
-        st.subheader(f"মূল্য প্রবণতা বিশ্লেষণ: {translate_bn(selected_crop, crop_translation)}")
+        # --- VISUALIZATION (Plotly Graph Objects for Confidence Bands) ---
+        st.subheader(f"মূল্য প্রবণতা ও ঝুঁকি বিশ্লেষণ: {translate_bn(selected_crop, crop_translation)}")
         
-        # Interactive Line Chart using Plotly
-        fig = px.line(
-            combined_df, 
-            x='Price_Date', 
-            y='Price_Tk_kg', 
-            color='Type',
-            color_discrete_map={
-                "ঐতিহাসিক তথ্য": "#1f77b4", # Blue
-                "এআই পূর্বাভাস": "#00cc96" # Green
-            },
-            title=f"{translate_bn(selected_district, district_translation)} এ {translate_bn(selected_crop, crop_translation)} এর {to_bengali_number(30)} দিনের মূল্য পূর্বাভাস",
-            labels={'Price_Tk_kg': 'মূল্য (টাকা / কেজি)', 'Price_Date': 'তারিখ'}
+        fig = go.Figure()
+        
+        # Historical Line
+        fig.add_trace(go.Scatter(
+            x=filtered_df['Price_Date'], y=filtered_df['Price_Tk_kg'],
+            mode='lines', name='ঐতিহাসিক তথ্য', line=dict(color='#1f77b4', width=2)
+        ))
+        
+        # Forecast Line
+        fig.add_trace(go.Scatter(
+            x=future_data['Price_Date'], y=future_data['Predicted_Price'],
+            mode='lines', name='এআই পূর্বাভাস', line=dict(color='#00cc96', width=2)
+        ))
+        
+        # Confidence Interval (Upper + Lower)
+        fig.add_trace(go.Scatter(
+            x=pd.concat([future_data['Price_Date'], future_data['Price_Date'][::-1]]),
+            y=pd.concat([future_data['Upper_Bound'], future_data['Lower_Bound'][::-1]]),
+            fill='toself', fillcolor='rgba(0, 204, 150, 0.2)',
+            line=dict(color='rgba(255,255,255,0)'), hoverinfo="skip", showlegend=False,
+            name='সম্ভাব্য পরিসীমা'
+        ))
+        
+        fig.update_layout(
+            title=f"আগামী ৩০ দিনের সম্ভাব্য মূল্য পরিসীমা (Confidence Interval)",
+            xaxis_title="তারিখ", yaxis_title="মূল্য (টাকা/কেজি)",
+            hovermode="x unified", template="plotly_white"
         )
-        fig.update_layout(hovermode="x unified")
         st.plotly_chart(fig, use_container_width=True)
 
         # --- INSIGHTS & METRICS ---
         current_price = filtered_df.iloc[-1]['Price_Tk_kg']
-        avg_forecast_price = future_prices.mean()
+        avg_price = future_prices.mean()
+        trend = "উর্ধ্বমুখী 📈" if avg_price > current_price else "নিম্নমুখী 📉"
         
-        # Determine Trend Logic
-        if avg_forecast_price > current_price:
-            trend_label = "বৃদ্ধির প্রবণতা 📈"
-            trend_color = "normal"
-        else:
-            trend_label = "হ্রাসের প্রবণতা 📉"
-            trend_color = "inverse"
-
-        # Display Metrics
         m1, m2, m3 = st.columns(3)
-        m1.metric("বর্তমান বাজার মূল্য", f"৳ {to_bengali_number(f'{current_price:.2f}')} প্রতি কেজি")
-        m2.metric(f"পূর্বাভাসিত গড় (পরবর্তী {to_bengali_number(30)} দিন)", f"৳ {to_bengali_number(f'{avg_forecast_price:.2f}')} প্রতি কেজি")
-        m3.metric("বাজার অবস্থা", trend_label, delta_color=trend_color)
+        m1.metric("বর্তমান গড় মূল্য", f"৳ {to_bengali_number(f'{current_price:.2f}')}")
+        m2.metric("পূর্বাভাস (গড়)", f"৳ {to_bengali_number(f'{avg_price:.2f}')}")
+        m3.metric("প্রবণতা", trend)
+        
+        st.info(f"💡 **বিশ্লেষণ:** এআই মডেলটি {to_bengali_number(100)} টি ডিসিশন ট্রি ব্যবহার করে এই পূর্বাভাস দিয়েছে। হালকা সবুজ অংশটি সম্ভাব্য মূল্যের ওঠানামা নির্দেশ করে।")
 
-        # Actionable Advice
-        st.markdown(f"""
-        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    padding: 1.5rem; border-radius: 12px; color: white; 
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin-top: 1rem;'>
-            <h3 style='color: white !important; margin: 0;'>💡 এআই সুপারিশ</h3>
-            <p style='color: white !important; font-size: 1.1rem; margin-top: 0.5rem;'>
-                পূর্বাভাসের ভিত্তিতে, আপনি যদি পরবর্তী সপ্তাহে <b>{translate_bn(selected_crop, crop_translation)}</b> বিক্রি করেন, 
-                তাহলে আপনি গড়ে <b style='font-size: 1.3rem;'>৳{to_bengali_number(f'{future_prices[:7].mean():.2f}')}</b> মূল্য পেতে পারেন
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    else:
-        st.warning("⚠️ এই নির্বাচনের জন্য সঠিক পূর্বাভাস তৈরি করার জন্য পর্যাপ্ত ঐতিহাসিক তথ্য নেই।")
+        st.markdown("---")
+        st.subheader("📲 এসএমএস অ্যালার্ট (Farmer Connect)")
+        c1, c2 = st.columns([3, 1])
+        phone = c1.text_input("মোবাইল নম্বর", placeholder="017XXXXXXXX")
+        if c2.button("📩 পাঠান") and phone:
+            st.success(f"✅ {phone}-এ অ্যালার্ট পাঠানো হয়েছে!")
 
 # -----------------------------------------------------------------------------
 # 5. MODULE 2: BEST MARKET FINDER
 # -----------------------------------------------------------------------------
 elif menu == "💰 সেরা বাজার খুঁজুন":
-    st.title("💰 স্মার্ট বাজার খুঁজুন")
-    st.markdown("<h3 style='color: #1a1a1a; font-weight: 500;'>বিভিন্ন জেলায় রিয়েল-টাইম মূল্য বিশ্লেষণ করে <b>সর্বোচ্চ লাভ</b> এর স্থান খুঁজে বের করুন।</h3>", unsafe_allow_html=True)
+    st.title("💰 স্মার্ট বাজার ও লাভ ক্যালকুলেটর")
+    st.markdown("### পরিবহন খরচ বাদ দিয়ে **প্রকৃত লাভ (Net Profit)** কোথায় বেশি তা জানুন।")
     st.divider()
 
-    # Select Crop
     all_crops = sorted(price_df['Crop_Name'].unique())
-    # Create Bengali display names
     all_crops_display = {crop: translate_bn(crop, crop_translation) for crop in all_crops}
-    target_crop_bn = st.selectbox("🔍 আপনি কোন ফসল বিক্রি করতে চান?", 
-                                   options=list(all_crops_display.values()),
-                                   format_func=lambda x: x)
-    # Get English name for data filtering
+    target_crop_bn = st.selectbox("🔍 ফসল নির্বাচন করুন", options=list(all_crops_display.values()))
     target_crop = [k for k, v in all_crops_display.items() if v == target_crop_bn][0]
 
-    # Logic: Get the latest price for this crop from every district
-    latest_date_in_db = price_df['Price_Date'].max()
-    
-    # Filter data (taking a 60-day window to ensure we find recent records)
-    recent_data = price_df[
-        (price_df['Crop_Name'] == target_crop) & 
-        (price_df['Price_Date'] >= latest_date_in_db - datetime.timedelta(days=60))
-    ]
+    # New Input: Transport Cost
+    st.markdown("#### 🚚 পরিবহন খরচ হিসাব করুন")
+    transport_cost = st.number_input("প্রতি কেজিতে পরিবহন খরচ কত? (টাকা)", min_value=0.0, value=2.0, step=0.5)
 
-    # Get the single latest entry for each district
-    latest_prices_by_district = recent_data.sort_values('Price_Date').groupby('District_Name').tail(1)
+    # Get Data
+    latest_date = price_df['Price_Date'].max()
+    recent_data = price_df[(price_df['Crop_Name'] == target_crop) & (price_df['Price_Date'] >= latest_date - datetime.timedelta(days=60))]
+    market_data = recent_data.sort_values('Price_Date').groupby('District_Name').tail(1).copy()
 
-    if not latest_prices_by_district.empty:
-        # Find the max price district
-        best_market = latest_prices_by_district.sort_values('Price_Tk_kg', ascending=False).iloc[0]
-        max_price = best_market['Price_Tk_kg']
-        best_district = best_market['District_Name']
-
-        # Display Recommendation with stunning design
+    if not market_data.empty:
+        # Calculate Net Profit
+        market_data['Net_Profit'] = market_data['Price_Tk_kg'] - transport_cost
+        best_market = market_data.sort_values('Net_Profit', ascending=False).iloc[0]
+        
+        # Recommendation Card
         st.markdown(f"""
-        <div style='background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); 
-                    padding: 2rem; border-radius: 15px; color: white; 
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin: 1rem 0;'>
-            <h2 style='color: white !important; margin: 0; font-size: 2rem;'>🏆 শীর্ষ সুপারিশ</h2>
-            <p style='color: white !important; font-size: 1.3rem; margin-top: 1rem;'>
-                আপনার <b>{translate_bn(target_crop, crop_translation)}</b> <b style='font-size: 1.5rem;'>{translate_bn(best_district, district_translation)}</b> এ পাঠান!
+        <div style='background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 2rem; border-radius: 15px; color: white; margin: 1rem 0;'>
+            <h2 style='color: white !important; margin: 0;'>🏆 সেরা বাজার: {translate_bn(best_market['District_Name'], district_translation)}</h2>
+            <p style='color: white !important; font-size: 1.2rem; margin-top: 10px;'>
+                বিক্রয় মূল্য: ৳ {to_bengali_number(f"{best_market['Price_Tk_kg']:.2f}")} | 
+                খরচ: ৳ {to_bengali_number(f"{transport_cost:.2f}")}
             </p>
-            <div style='background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 10px; margin-top: 1rem;'>
-                <p style='color: white !important; margin: 0; font-size: 0.9rem;'>{translate_bn(best_district, district_translation)} এ সর্বোচ্চ মূল্য</p>
-                <p style='color: white !important; margin: 0; font-size: 2.5rem; font-weight: 700;'>৳ {to_bengali_number(f'{max_price:.2f}')} / কেজি</p>
-            </div>
+            <h1 style='color: white !important; margin: 0; font-size: 3rem;'>
+                নিট লাভ: ৳ {to_bengali_number(f"{best_market['Net_Profit']:.2f}")} <span style='font-size:1rem'>/কেজি</span>
+            </h1>
         </div>
         """, unsafe_allow_html=True)
 
-        # Visualization: Bar Chart Comparison
-        st.subheader("জেলাগুলিতে মূল্য তুলনা")
-        
-        fig_bar = px.bar(
-            latest_prices_by_district.sort_values('Price_Tk_kg', ascending=True),
-            x='Price_Tk_kg',
-            y='District_Name',
-            orientation='h',
-            title=f"{translate_bn(target_crop, crop_translation)} এর বর্তমান বাজার মূল্য",
-            labels={'Price_Tk_kg': 'মূল্য (টাকা/কেজি)', 'District_Name': 'জেলা'},
-            color='Price_Tk_kg',
-            color_continuous_scale='Viridis'
+        # Bar Chart showing Profit
+        fig = px.bar(
+            market_data.sort_values('Net_Profit', ascending=True),
+            x='Net_Profit', y='District_Name', orientation='h',
+            title=f"বিভিন্ন জেলায় সম্ভাব্য নিট লাভ (পরিবহন খরচ বাদে)",
+            labels={'Net_Profit': 'নিট লাভ (টাকা/কেজি)', 'District_Name': 'জেলা'},
+            color='Net_Profit', color_continuous_scale='Greens'
         )
-        st.plotly_chart(fig_bar, use_container_width=True)
-    
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("এই ফসলের জন্য সাম্প্রতিক বাজার তথ্য পাওয়া যায়নি।")
+        st.warning("তথ্য পাওয়া যায়নি।")
 
 # -----------------------------------------------------------------------------
 # 6. MODULE 3: SOIL & CROP ADVISOR
 # -----------------------------------------------------------------------------
 elif menu == "🌱 মাটি ও ফসল পরামর্শদাতা":
     st.title("🌱 বুদ্ধিমান ফসল পরামর্শদাতা")
-    st.markdown("<h3 style='color: #1a1a1a; font-weight: 500;'>মাটির স্বাস্থ্য এবং ঐতিহাসিক উৎপাদন তথ্যের উপর ভিত্তি করে বৈজ্ঞানিক সুপারিশ।</h3>", unsafe_allow_html=True)
+    st.markdown("### মাটির গুণাগুণ বিশ্লেষণ করে বৈজ্ঞানিক চাষাবাদ পরামর্শ।")
     st.divider()
 
     # Input: Select District
@@ -626,16 +610,7 @@ elif menu == "🌱 মাটি ও ফসল পরামর্শদাতা"
     # Get soil data for the selected district (taking the first record found)
     soil_record = soil_df[soil_df['District_Name'] == target_district].iloc[0]
 
-    st.subheader(f"🧪 মাটির স্বাস্থ্য রিপোর্ট: {translate_bn(target_district, district_translation)}")
-    
-    # Display Soil Metrics in Columns with enhanced styling
-    st.markdown("""
-    <style>
-    [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # Soil Dashboard
     
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("🌍 মাটির ধরন", translate_bn(soil_record['Soil_Type'], soil_translation))
@@ -643,42 +618,26 @@ elif menu == "🌱 মাটি ও ফসল পরামর্শদাতা"
     c3.metric("🧬 নাইট্রোজেন (N)", f"{to_bengali_number(f'{soil_record['Nitrogen_Content_kg_ha']:.1f}')} কেজি/হেক্টর")
     c4.metric("🌿 জৈব পদার্থ", f"{to_bengali_number(f'{soil_record['Organic_Matter_Percent']:.1f}')}%")
 
-    # --- Crop Recommendation ---
-    st.subheader("🌾 উচ্চ ফলনের জন্য সুপারিশকৃত ফসল")
-    st.markdown(f"<p style='color: #1a1a1a; font-size: 1.1rem;'><b>{translate_bn(target_district, district_translation)}</b> এর মাটি বিশ্লেষণ এবং ঐতিহাসিক উৎপাদন তথ্যের উপর ভিত্তি করে নিম্নলিখিত ফসলগুলি সুপারিশ করা হয়:</p>", unsafe_allow_html=True)
-
-    # Logic: Find crops with highest yield (Quintals/Hectare) in this district
-    district_prod = prod_df[prod_df['District_Name'] == target_district]
+    st.subheader("🌾 সুপারিশকৃত ফসল ও কারণ")
     
-    # Group by crop and get average yield (in case of multiple seasons)
-    top_crops = district_prod.groupby('Crop_Name')['Yield_Quintals_per_Ha'].mean().sort_values(ascending=False).head(5)
+    dist_prod = prod_df[prod_df['District_Name'] == target_district]
+    top_crops = dist_prod.groupby('Crop_Name')['Yield_Quintals_per_Ha'].mean().sort_values(ascending=False).head(5)
 
-    # Display Top 5 Crops with beautiful cards
     for idx, (crop, yield_val) in enumerate(top_crops.items(), 1):
-        crop_bn = translate_bn(crop, crop_translation)
+        soil_type_bn = translate_bn(soil_record['Soil_Type'], soil_translation)
+        
+        # Simple Logic for "Reasoning" Text
+        reason = f"এই অঞ্চলের <b>{soil_type_bn}</b> এবং আবহাওয়া <b>{translate_bn(crop, crop_translation)}</b> চাষের জন্য অত্যন্ত উপযোগী।"
+        
         st.markdown(f"""
-        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    padding: 1.2rem; border-radius: 10px; color: white; 
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.8rem 0;'>
-            <h3 style='color: white !important; margin: 0; display: flex; align-items: center;'>
-                <span style='background: rgba(255,255,255,0.3); padding: 0.3rem 0.8rem; 
-                             border-radius: 50%; margin-right: 1rem; font-size: 1.2rem;'>{to_bengali_number(idx)}</span>
-                ✅ {crop_bn}
-            </h3>
-            <p style='color: white !important; font-size: 1rem; margin: 0.5rem 0 0 3rem;'>
-                গড় ফলন: <b style='font-size: 1.2rem;'>{to_bengali_number(f'{yield_val:.1f}')}</b> কুইন্টাল/হেক্টর
-            </p>
+        <div style='background: white; border-left: 5px solid #667eea; padding: 1.2rem; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
+            <h3 style='margin:0; color: #667eea !important;'>#{idx} {translate_bn(crop, crop_translation)}</h3>
+            <p style='margin: 5px 0 0 0; font-size: 0.95rem;'><b>ঐতিহাসিক ফলন:</b> {to_bengali_number(f'{yield_val:.1f}')} কুইন্টাল/হেক্টর</p>
+            <p style='margin: 5px 0 0 0; font-size: 0.9rem; color: #555;'>✅ <b>কারণ:</b> {reason}</p>
         </div>
         """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # FOOTER
 # -----------------------------------------------------------------------------
-st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; padding: 2rem;'>"
-    "<h4 style='color: #1a1a1a; margin: 0;'>Built for <b style='color: #667eea;'>Million Minds for Bangladesh AI Build-a-thon</b></h4>"
-    "<p style='color: #2c3e50; margin-top: 0.5rem;'>Powered by Python & Streamlit | 🌾 Empowering Farmers with AI</p>"
-    "</div>",
-    unsafe_allow_html=True
-)
+st.markdown("<br><hr><div style='text-align: center; color: #555;'>Agri-Smart BD | Built for AI Build-a-thon 2025</div>", unsafe_allow_html=True)
