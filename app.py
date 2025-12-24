@@ -21,7 +21,7 @@ st.markdown("""
     <style>
     /* Main background with gradient */
     .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         background-attachment: fixed;
     }
     
@@ -102,7 +102,7 @@ st.markdown("""
     /* Selectbox dropdown styling */
     .stSelectbox > div > div {
         background-color: rgba(255, 255, 255, 0.95) !important;
-        border: 2px solid #667eea !important;
+        border: 2px solid #11998e !important;
         border-radius: 8px !important;
     }
     
@@ -129,13 +129,13 @@ st.markdown("""
     
     /* Dropdown option on hover */
     [role="option"]:hover {
-        background-color: #667eea !important;
+        background-color: #11998e !important;
         color: #ffffff !important;
     }
     
     /* Selected option in dropdown */
     [aria-selected="true"] {
-        background-color: #764ba2 !important;
+        background-color: #38ef7d !important;
         color: #ffffff !important;
     }
     
@@ -147,7 +147,7 @@ st.markdown("""
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+        background: linear-gradient(180deg, #0f5132 0%, #198754 100%);
     }
     
     [data-testid="stSidebar"] * {
@@ -165,7 +165,7 @@ st.markdown("""
     
     /* Cards effect for metrics */
     [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         padding: 1.5rem;
         border-radius: 12px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -179,7 +179,7 @@ st.markdown("""
     
     /* Button styling */
     .stButton button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         color: white;
         border: none;
         border-radius: 8px;
@@ -399,7 +399,7 @@ st.sidebar.markdown("---")
 with st.sidebar.expander("ℹ️ তথ্য এবং ডেটা উৎস"):
     st.write("**ডেটা সোর্স:** এই প্রোটোটাইপটি ঐতিহাসিক কৃষি ডেটা এবং আবহাওয়ার প্যাটার্ন ব্যবহার করে তৈরি করা হয়েছে।")
     st.write("**গোপনীয়তা:** এটি শুধুমাত্র একটি ডেমো। কোনো ব্যক্তিগত তথ্য সংরক্ষণ করা হয় না।")
-    st.write("**Team:** Million Minds | Build-a-thon 2025")
+    st.write("**Team:** Trio Leveling | Build-a-thon 2025")
 
 # -----------------------------------------------------------------------------
 # 4. MODULE 1: AI PRICE FORECASTING
@@ -473,7 +473,8 @@ if menu == "📊 মূল্য পূর্বাভাস (এআই)":
         X_future = future_data[['Date_Ordinal', 'Month', 'Week', 'Year']]
         
         # Get predictions from all individual trees to calculate variance
-        predictions = [tree.predict(X_future) for tree in model.estimators_]
+        # Convert to numpy array to avoid feature name warnings
+        predictions = [tree.predict(X_future.values) for tree in model.estimators_]
         predictions = np.array(predictions)
         
         # Mean prediction
@@ -532,10 +533,15 @@ if menu == "📊 মূল্য পূর্বাভাস (এআই)":
 
         st.markdown("---")
         st.subheader("📲 এসএমএস অ্যালার্ট (Farmer Connect)")
-        c1, c2 = st.columns([3, 1])
-        phone = c1.text_input("মোবাইল নম্বর", placeholder="017XXXXXXXX")
-        if c2.button("📩 পাঠান") and phone:
+        st.markdown("<small>প্রোটোটাইপ ভার্সন - SMS গেটওয়ে ইন্টিগ্রেশন আসছে শীঘ্রই</small>", unsafe_allow_html=True)
+        phone = st.text_input("মোবাইল নম্বর", placeholder="017XXXXXXXX", key="sms_phone")
+        col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
+        with col_btn2:
+            send_button = st.button("📩 মূল্য সতর্কতা পাঠান", use_container_width=True)
+        if send_button and phone:
             st.success(f"✅ {phone}-এ অ্যালার্ট পাঠানো হয়েছে!")
+        elif send_button and not phone:
+            st.warning("⚠️ অনুগ্রহ করে একটি মোবাইল নম্বর প্রদান করুন।")
 
 # -----------------------------------------------------------------------------
 # 5. MODULE 2: BEST MARKET FINDER
@@ -630,8 +636,8 @@ elif menu == "🌱 মাটি ও ফসল পরামর্শদাতা"
         reason = f"এই অঞ্চলের <b>{soil_type_bn}</b> এবং আবহাওয়া <b>{translate_bn(crop, crop_translation)}</b> চাষের জন্য অত্যন্ত উপযোগী।"
         
         st.markdown(f"""
-        <div style='background: white; border-left: 5px solid #667eea; padding: 1.2rem; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
-            <h3 style='margin:0; color: #667eea !important;'>#{idx} {translate_bn(crop, crop_translation)}</h3>
+        <div style='background: white; border-left: 5px solid #11998e; padding: 1.2rem; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
+            <h3 style='margin:0; color: #11998e !important;'>#{idx} {translate_bn(crop, crop_translation)}</h3>
             <p style='margin: 5px 0 0 0; font-size: 0.95rem;'><b>ঐতিহাসিক ফলন:</b> {to_bengali_number(f'{yield_val:.1f}')} কুইন্টাল/হেক্টর</p>
             <p style='margin: 5px 0 0 0; font-size: 0.9rem; color: #555;'>✅ <b>কারণ:</b> {reason}</p>
         </div>
