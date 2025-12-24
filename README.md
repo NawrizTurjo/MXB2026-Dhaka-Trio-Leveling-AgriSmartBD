@@ -145,7 +145,12 @@ Agri-Price-Pred-millionX/
 
 ## 🛠️ Technologies Used
 
-### Backend & Machine Learning
+- **Python 3.13+**
+- **Streamlit** - Web application framework
+- **Pandas** - Data manipulation
+- **NumPy** - Numerical computing
+- **Scikit-learn** - Machine learning (Random Forest)
+- **Plotly** - Interactive visualizations
 
 ---
 
