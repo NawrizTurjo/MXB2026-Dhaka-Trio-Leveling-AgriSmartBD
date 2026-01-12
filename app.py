@@ -1247,13 +1247,13 @@ elif menu == "🦠 ফসল বিষাক্তি পরিচিতি":
         st.progress(int(conf_score))
         
         # --- GEMINI INTEGRATION ---
-        gemini_api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+        # gemini_api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
         
-        if gemini_api_key:
-            with st.expander("🤖 এআই বিশেষজ্ঞের মতামত (Gemini 2.0)", expanded=True):
-                with st.spinner("Gemini চিত্র বিশ্লেষণ করছে..."):
-                    gemini_response = get_gemini_analysis(image, pred_class, conf_score, gemini_api_key)
-                    st.markdown(gemini_response)
+        # if gemini_api_key:
+        #     with st.expander("🤖 এআই বিশেষজ্ঞের মতামত (Gemini 2.0)", expanded=True):
+        #         with st.spinner("Gemini চিত্র বিশ্লেষণ করছে..."):
+        #             gemini_response = get_gemini_analysis(image, pred_class, conf_score, gemini_api_key)
+        #             st.markdown(gemini_response)
         
         # Remedy Section
         with st.container():
