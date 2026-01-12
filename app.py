@@ -12,15 +12,23 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 
 # Load environment variables
+# Load environment variables
 load_dotenv()
 
-# --- IMPORTS for Crop Disease
-import torch
-import torchvision.transforms as transforms
-from torchvision.models import resnet50
-from PIL import Image
-import torch.nn.functional as F
-import torch.nn as nn
+# Set Hugging Face Hub to Offline Mode for Demo
+os.environ["HF_HUB_OFFLINE"] = "1"
+# Suppress TensorFlow Warnings
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" 
+import logging
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+
+# --- IMPORTS for Crop Disease (Linear/Hugging Face)
+import tensorflow as tf
+import tf_keras # Use legacy Keras for .h5 model compatibility
+from tf_keras.models import load_model as load_keras_model
+from tensorflow.keras.applications.efficientnet import preprocess_input
+from PIL import Image, ImageOps
+import numpy as np
 
 # --- IMPORTS (Voice, SMS, DB) ---
 from streamlit_mic_recorder import mic_recorder
@@ -29,78 +37,17 @@ import io
 from twilio.rest import Client
 import pymongo
 
-# --- MODEL CLASSES (Global Scope for Pickling) ---
-def accuracy(outputs, labels):
-    _, preds = torch.max(outputs, dim=1)
-    return torch.tensor(torch.sum(preds == labels).item() / len(preds))
-
-class ImageClassificationBase(nn.Module):
-    def training_step(self, batch):
-        images, labels = batch
-        out = self(images)                  # Generate predictions
-        loss = F.cross_entropy(out, labels) # Calculate loss
-        return loss
-    
-    def validation_step(self, batch):
-        images, labels = batch
-        out = self(images)                   # Generate prediction
-        loss = F.cross_entropy(out, labels)  # Calculate loss
-        acc = accuracy(out, labels)          # Calculate accuracy
-        return {"val_loss": loss.detach(), "val_accuracy": acc}
-    
-    def validation_epoch_end(self, outputs):
-        batch_losses = [x["val_loss"] for x in outputs]
-        batch_accuracy = [x["val_accuracy"] for x in outputs]
-        epoch_loss = torch.stack(batch_losses).mean()       # Combine loss  
-        epoch_accuracy = torch.stack(batch_accuracy).mean()
-        return {"val_loss": epoch_loss, "val_accuracy": epoch_accuracy} # Combine accuracies
-    
-    def epoch_end(self, epoch, result):
-        print("Epoch [{}], last_lr: {:.5f}, train_loss: {:.4f}, val_loss: {:.4f}, val_acc: {:.4f}".format(
-            epoch, result['lrs'][-1], result['train_loss'], result['val_loss'], result['val_accuracy']))
-
-def ConvBlock(in_channels, out_channels, pool=False):
-    layers = [nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-             nn.BatchNorm2d(out_channels),
-             nn.ReLU(inplace=True)]
-    if pool:
-        layers.append(nn.MaxPool2d(4))
-    return nn.Sequential(*layers)
-
-class ResNet9(ImageClassificationBase):
-    def __init__(self, in_channels, num_diseases):
-        super().__init__()
-        
-        self.conv1 = ConvBlock(in_channels, 64)
-        self.conv2 = ConvBlock(64, 128, pool=True) # out_dim : 128 x 64 x 64 
-        self.res1 = nn.Sequential(ConvBlock(128, 128), ConvBlock(128, 128))
-        
-        self.conv3 = ConvBlock(128, 256, pool=True) # out_dim : 256 x 16 x 16
-        self.conv4 = ConvBlock(256, 512, pool=True) # out_dim : 512 x 4 x 44
-        self.res2 = nn.Sequential(ConvBlock(512, 512), ConvBlock(512, 512))
-        
-        self.classifier = nn.Sequential(nn.MaxPool2d(4),
-                                       nn.Flatten(),
-                                       nn.Linear(512, num_diseases))
-        
-    def forward(self, xb): # xb is the loaded batch
-        out = self.conv1(xb)
-        out = self.conv2(out)
-        out = self.res1(out) + out
-        out = self.conv3(out)
-        out = self.conv4(out)
-        out = self.res2(out) + out
-        out = self.classifier(out)
-        return out
-
+# --- MODEL LOADING (Hugging Face - Offline) ---
 @st.cache_resource
-def load_model():
-    # Instantiate model structure
-    model = ResNet9(3, 38)
-    # Load weights
-    model.load_state_dict(torch.load('plant_disease_weights.pth', map_location=torch.device('cpu')))
-    model.eval()
-    return model
+def load_plant_model():
+    model_path = "./plant_disease_model/plant_disease_efficientnetb4.h5"
+    try:
+        # Load from local .h5 file directly (Keras format)
+        model = load_keras_model(model_path)
+        return model
+    except Exception as e:
+        st.error(f"Critical Error Loading Model: {e}")
+        return None
 
 # -----------------------------------
 
@@ -516,15 +463,20 @@ CLASS_LABELS = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
     'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy',
     'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_',
-    'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Grape___Black_rot',
-    'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy',
-    'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy',
-    'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_blight',
-    'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy',
-    'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy',
+    'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 
+    'Grape___Black_rot', 'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy',
+    'Orange___Haunglongbing_(Citrus_greening)', 
+    'Peach___Bacterial_spot', 'Peach___healthy',
+    'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 
+    'Potato___Early_blight', 'Potato___Late_blight', 'Potato___healthy', 
+    'Raspberry___healthy', 
+    'Soybean___healthy', 
+    'Squash___Powdery_mildew', 
+    'Strawberry___Leaf_scorch', 'Strawberry___healthy',
     'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight',
-    'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite',
-    'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus',
+    'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot', 
+    'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot',
+    'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus',
     'Tomato___healthy'
 ]
 # Bengali translations (optional - expand as needed for your app)
@@ -1186,7 +1138,9 @@ elif menu == "🦠 ফসল বিষাক্তি পরিচিতি":
     st.markdown("Upload a photo of your crop leaf for AI analysis (99.2% accuracy on global dataset). Note: This is for guidance only—consult local agri experts for confirmation.")
 
 
-    model = load_model()
+    model = load_plant_model()
+    if not model:
+        st.error("মডেল লোড হতে সমস্যা হয়েছে। ইন্টারনেট সংযোগ চেক করুন।")
     
     # UI Layout: Tabs for Input Method
     tab_cam, tab_up = st.tabs(["📸 ছবি তুলুন", "📂 ছবি আপলোড করুন"])
@@ -1212,22 +1166,31 @@ elif menu == "🦠 ফসল বিষাক্তি পরিচিতি":
         with c2:
             st.image(image, caption="বিশ্লেষণকৃত ছবি", use_container_width=True)
 
-        with st.spinner("রোগ নির্ণয় করা হচ্ছে..."):
-            # Transformation
-            transform = transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(256),
-                transforms.ToTensor(),
-            ])
-            img_tensor = transform(image).unsqueeze(0)
+        with st.spinner("রোগ নির্ণয় করা হচ্ছে (EfficientNetB4)..."):
+            try:
+                # Preprocess for EfficientNetB4 (380x380)
+                # 1. Resize
+                img_resized = ImageOps.fit(image, (380, 380), Image.Resampling.LANCZOS)
+                
+                # 2. Convert to Array and Batch
+                img_array = np.asarray(img_resized)
+                img_batch = np.expand_dims(img_array, axis=0)
+                
+                # 3. Preprocess Input (EfficientNet standard)
+                img_preprocessed = preprocess_input(img_batch)
 
-            # Inference
-            with torch.no_grad():
-                outputs = model(img_tensor)
-                probs = F.softmax(outputs, dim=1)
-                confidence, predicted = torch.max(probs, 1)
-                pred_class = CLASS_LABELS[predicted.item()]
-                conf_score = confidence.item() * 100
+                # Inference
+                probs = model.predict(img_preprocessed)
+                
+                # Get Prediction
+                confidence_val = np.max(probs)
+                pred_idx = np.argmax(probs)
+                
+                pred_class = CLASS_LABELS[pred_idx]
+                conf_score = confidence_val * 100
+            except Exception as e:
+                st.error(f"Inference Error: {e}")
+                st.stop()
 
         # Display Results
         bn_label = DISEASE_TRANSLATION.get(pred_class, pred_class)

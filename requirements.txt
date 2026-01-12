@@ -13,3 +13,6 @@ pillow  # For image handling
 requests
 python-dotenv
 google-generativeai
+tensorflow
+transformers
+huggingface_hub

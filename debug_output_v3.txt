@@ -1,0 +1,70 @@
+2026-01-13 00:28:57.267924: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-01-13 00:28:59.832694: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\export\tf2onnx_lib.py:8: FutureWarning: In the future `np.object` will be defined as the corresponding NumPy scalar.
+  if not hasattr(np, "object"):
+Traceback (most recent call last):
+  File "C:\Python312\Lib\inspect.py", line 1391, in getfullargspec
+    sig = _signature_from_callable(func,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\inspect.py", line 2518, in _signature_from_callable
+    raise TypeError('{!r} is not a callable object'.format(obj))
+TypeError: 'math.truediv' is not a callable object
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\debug_model_load.py", line 23, in <module>
+    model = load_model(model_path, custom_objects=custom_objects, compile=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\saving\saving_api.py", line 196, in load_model
+    return legacy_h5_format.load_model_from_hdf5(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\legacy\saving\legacy_h5_format.py", line 137, in load_model_from_hdf5
+    model = saving_utils.model_from_config(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\legacy\saving\saving_utils.py", line 83, in model_from_config
+    return serialization.deserialize_keras_object(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\legacy\saving\serialization.py", line 488, in deserialize_keras_object
+    deserialized_obj = cls.from_config(
+                       ^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\models\model.py", line 823, in from_config
+    return functional_from_config(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\models\functional.py", line 561, in functional_from_config
+    process_layer(layer_data)
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\models\functional.py", line 524, in process_layer
+    layer = saving_utils.model_from_config(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\legacy\saving\saving_utils.py", line 83, in model_from_config
+    return serialization.deserialize_keras_object(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\legacy\saving\serialization.py", line 488, in deserialize_keras_object
+    deserialized_obj = cls.from_config(
+                       ^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\models\model.py", line 823, in from_config
+    return functional_from_config(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\models\functional.py", line 561, in functional_from_config
+    process_layer(layer_data)
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\models\functional.py", line 524, in process_layer
+    layer = saving_utils.model_from_config(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\legacy\saving\saving_utils.py", line 83, in model_from_config
+    return serialization.deserialize_keras_object(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\legacy\saving\serialization.py", line 488, in deserialize_keras_object
+    deserialized_obj = cls.from_config(
+                       ^^^^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\layers\core\lambda_layer.py", line 232, in from_config
+    return cls(**config)
+           ^^^^^^^^^^^^^
+  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\.venv\Lib\site-packages\keras\src\layers\core\lambda_layer.py", line 80, in __init__
+    function_args = inspect.getfullargspec(function).args
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\inspect.py", line 1401, in getfullargspec
+    raise TypeError('unsupported callable') from ex
+TypeError: unsupported callable
+Attempting to load model from: E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\plant_disease_model\plant_disease_efficientnetb4.h5
+File size: 98030480 bytes
+FATAL ERROR: unsupported callable
