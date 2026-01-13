@@ -16,3 +16,4 @@ google-generativeai
 tensorflow
 transformers
 huggingface_hub
+tf_keras
