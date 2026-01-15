@@ -19,3 +19,4 @@ huggingface_hub
 opencv-python-headless
 tf_keras
 streamlit-js-eval
+streamlit-option-menu

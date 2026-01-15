@@ -43,6 +43,7 @@ import io
 from twilio.rest import Client
 import pymongo
 from streamlit_js_eval import streamlit_js_eval
+from streamlit_option_menu import option_menu
 
 # --- MODEL LOADING (Hugging Face - Offline) ---
 @st.cache_resource
@@ -111,7 +112,7 @@ def is_likely_leaf(img_pil):
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Agri-Smart BD | এআই মূল্য পূর্বাভাস",
-    page_icon="🌾",
+    page_icon="assets/favicon.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -312,6 +313,26 @@ st.markdown("""
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         border: 1px solid #e0e0e0;
+    }
+    
+    /* --- RESPONSIVE MENU CSS --- */
+    
+    /* Mobile View (< 768px): Hide Sidebar, Show Top Menu */
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+        [data-testid="collapsedControl"] {
+            display: none;
+        }
+    }
+
+    /* Desktop View (>= 768px): Hide Top Menu, Show Sidebar */
+    @media (min-width: 768px) {
+        /* Use the adjacent sibling selector to look for the specific marker we will inject */
+        div:has(#mobile-menu-marker) + [data-testid="stExpander"] {
+            display: none;
+        }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -1352,9 +1373,57 @@ def get_crop_reasoning(soil_record, crop, yield_val):
     return "\n\n".join(reasons)
 
 
-# --- Sidebar ---
+# --- Top Menu (Mobile Optimized) ---
+# --- Menu Constants ---
+MENU_OPTIONS = ["📊 মূল্য পূর্বাভাস (এআই)", "💰 সেরা বাজার খুঁজুন", "🌱 মাটি ও ফসল পরামর্শদাতা", "🦠 ফসল বিষাক্তি পরিচিতি", "📊 এগ্রি-ফাইন্যান্স ও লাভ রিপোর্ট"]
+MENU_ICONS = ["graph-up-arrow", "shop", "flower1", "bug", "cash-coin"]
+
+# --- State Management for Menu Sync ---
+if 'current_module' not in st.session_state:
+    st.session_state.current_module = MENU_OPTIONS[0]
+
+def update_from_sidebar():
+    st.session_state.current_module = st.session_state.nav_sidebar
+
+def update_from_mobile(key):
+    st.session_state.current_module = st.session_state[key]
+
+# --- Sidebar (Desktop) ---
 st.sidebar.markdown("**এআই চালিত কৃষি বুদ্ধিমত্তা**")
-menu = st.sidebar.radio("মডিউল নির্বাচন করুন:", ["📊 মূল্য পূর্বাভাস (এআই)", "💰 সেরা বাজার খুঁজুন", "🌱 মাটি ও ফসল পরামর্শদাতা", "🦠 ফসল বিষাক্তি পরিচিতি", "📊 এগ্রি-ফাইন্যান্স ও লাভ রিপোর্ট"])
+# Ensure the sidebar reflects the current state (e.g. if changed from mobile)
+st.sidebar.radio(
+    "মডিউল নির্বাচন করুন:", 
+    MENU_OPTIONS,
+    index=MENU_OPTIONS.index(st.session_state.current_module) if st.session_state.current_module in MENU_OPTIONS else 0,
+    key="nav_sidebar",
+    on_change=update_from_sidebar
+)
+
+# --- Top Menu (Mobile Optimized) ---
+# Inject marker for CSS to find
+st.markdown('<div id="mobile-menu-marker"></div>', unsafe_allow_html=True)
+
+with st.expander("☰ মেনু নির্বাচন (Menu)", expanded=False):
+    # Ensure options menu reflects current state
+    selected = option_menu(
+        menu_title=None, 
+        options=MENU_OPTIONS, 
+        icons=MENU_ICONS, 
+        menu_icon="cast", 
+        default_index=MENU_OPTIONS.index(st.session_state.current_module) if st.session_state.current_module in MENU_OPTIONS else 0,
+        orientation="vertical",
+        key="nav_mobile",
+        on_change=update_from_mobile,
+        styles={
+            "container": {"padding": "0!important", "background-color": "#ffffff"},
+            "icon": {"color": "#FF8C00", "font-size": "18px"},
+            "nav-link": {"font-size": "16px", "text-align": "left", "margin": "5px", "--hover-color": "#eee"},
+            "nav-link-selected": {"background-color": "#11998e", "color": "white"},
+        }
+    )
+
+# Use the synced state variable for page logic
+menu = st.session_state.current_module
 
 # -----------------------------------------------------------------------------
 # MODULE 1: AI PRICE FORECASTING
@@ -1903,7 +1972,14 @@ elif menu == "🌱 মাটি ও ফসল পরামর্শদাতা"
             st.write(reasoning)
 elif menu == "🦠 ফসল বিষাক্তি পরিচিতি":
     st.title("🦠 ফসল বিষাক্তি পরিচিতি")
-    st.markdown("Upload a photo of your crop leaf for AI analysis (99.2% accuracy on global dataset). Note: This is for guidance only—consult local agri experts for confirmation.")
+    # st.markdown("Upload a photo of your crop leaf for AI analysis (99.2% accuracy on global dataset). Note: This is for guidance only—consult local agri experts for confirmation.")
+    st.markdown(
+    "AI বিশ্লেষণের জন্য আপনার ফসলের পাতার একটি ছবি আপলোড করুন "
+    "(গ্লোবাল ডেটাসেটে ৯৯.২% নির্ভুলতা)। "
+    "নোট: এটি শুধুমাত্র প্রাথমিক দিকনির্দেশনার জন্য—চূড়ান্ত সিদ্ধান্তের আগে "
+    "স্থানীয় কৃষি বিশেষজ্ঞের পরামর্শ নিন।"
+)
+
 
 
     model = load_plant_model()
