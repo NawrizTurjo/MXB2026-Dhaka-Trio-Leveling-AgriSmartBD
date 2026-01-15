@@ -117,6 +117,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- HIDE STREAMLIT STYLE (PWA Fix) ---
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            .stApp > header {display: none;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
 # Custom CSS - Enhanced Professional Dashboard Design
 st.markdown("""
     <style>
@@ -322,7 +333,7 @@ st.markdown("""
         [data-testid="stSidebar"] {
             display: none;
         }
-        [data-testid="collapsedControl"] {
+        [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"] {
             display: none;
         }
     }
