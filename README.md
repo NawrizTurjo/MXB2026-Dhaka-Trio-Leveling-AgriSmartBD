@@ -169,7 +169,7 @@ The app will open in your browser at `http://localhost:8501`
 ## 📁 Project Structure
 
 ```
-AgriSmartBD-Trio-Leveling-MillionX/
+Agri-Smart-BD/
 ├── app.py                          # Main Streamlit application with 3 modules
 ├── plant-disease-classification-99-2.ipynb # ML Training Notebook (99.2% Accuracy)
 ├── plant-disease-model-complete.pth # Trained Pytorch Model Weights
