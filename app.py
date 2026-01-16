@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.ensemble import RandomForestRegressor
+# from sklearn.linear_model import LinearRegression # Time-series commented out
 import datetime
 import time
 import requests
@@ -509,7 +510,7 @@ def get_gemini_analysis(image, predicted_class, confidence, api_key):
         
         prompt = f"""
         You are an agricultural expert. I have uploaded an image of a crop leaf.
-        My automated ResNet model identified the disease as: '{predicted_class}' with {confidence:.1f}% confidence.
+        My automated model identified the disease as: '{predicted_class}' with {confidence:.1f}% confidence.
         
         Task:
         1. visually verify if the image likely matches this disease.

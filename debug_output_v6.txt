@@ -1,3 +1,0 @@
-  File "E:\Competitions\MXB2026-Dhaka-Trio-Leveling-AgriSmartBD\debug_model_load.py", line 10
-    try:
-IndentationError: unexpected indent

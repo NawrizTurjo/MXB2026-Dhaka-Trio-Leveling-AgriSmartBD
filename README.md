@@ -48,23 +48,35 @@ In Bangladesh, farmers face a critical information gap:
 
 ### 🦠 AI Plant Disease Detection & Doctor
 
-- **Image Recognition:** ResNet-based model with 99.2% accuracy
+- **Dual AI Architecture:**
+  - **Image Recognition:** EfficientNetB4-based model with 99.2% accuracy
+  - **Consultant:** Google Gemini 1.5 Flash AI for second opinions and treatment verification
 - **Instant Diagnosis:** Identifies 38 distinct plant diseases
-- **Digital Prescription:** AI Doctor suggests specific medicines and dosage
+- **Digital Prescription:** AI Doctor suggests specific medicines (e.g., Score, Tilt), dosage, and organic remedies
+- **Evidence-Based:** Links diagnoses to specific chemical groups and actionable farming advice
 - **Notebook:** Trained using `plant-disease-classification-99-2.ipynb`
-- **Offline Capability:** Works without constant internet connection
 
 ### 🌦️ Pin-Point Weather & Disaster Alerts
 
-- **GPS Integration:** Real-time location-based weather data
+- **Hybrid Geolocation:** Uses HTML5 GPS for pin-point accuracy with IP-based fallback
+- **Real-time Data:** Fetches live weather conditions using OpenWeatherMap API
 - **Disaster Advice:** Red/Orange/Green alert cards for rain, heatwave, and humidity
-- **Farming Impact:** Recommends when to irrigate or spray pesticides based on forecast
+- **Farming Impact:** Recommends when to irrigate or spray pesticides based on 5-day forecast
+- **Visual Dashboard:** Temperature, humidity, wind speed, and pressure metrics with localized advice
+
+### 🎤 Voice-Activated Market Assistant (New)
+
+- **Language Support:** Full Bengali (বাংলা) voice command recognition
+- **Hands-free Operation:** Navigate crops and districts simply by speaking their names
+- **Accessibility:** Designed for farmers with lower literacy levels to easily access complex data
+- **Technology:** Powered by `speech_recognition` and Google Speech API
 
 ### 📊 Agri-Finance & Profit Calculator
 
-- **Loan Eligibility:** Checks return on investment (ROI) for bank loans
-- **Profit Report:** Estimates total production and net income based on land size
-- **Cost Analysis:** Deducts estimated input costs to project real profits
+- **ROI Analysis:** Automated Return on Investment calculation (>30% ROI indicator)
+- **Bank Loan Eligibility:** Smart assessment based on net profit (>10,000 BDT) and production margins
+- **Profit Projection:** Estimates total production and net income based on specific land size inputs
+- **Cost Analysis:** Deducts estimated input costs (fertilizer, irrigation) to project real-world profits
 
 ### 📲 Smart SMS Alert System
 
@@ -157,7 +169,7 @@ The app will open in your browser at `http://localhost:8501`
 ## 📁 Project Structure
 
 ```
-Agri-Price-Pred-millionX/
+AgriSmartBD-Trio-Leveling-MillionX/
 ├── app.py                          # Main Streamlit application with 3 modules
 ├── plant-disease-classification-99-2.ipynb # ML Training Notebook (99.2% Accuracy)
 ├── plant-disease-model-complete.pth # Trained Pytorch Model Weights
@@ -182,7 +194,11 @@ Agri-Price-Pred-millionX/
 - **Pandas** - Data manipulation
 - **NumPy** - Numerical computing
 - **Scikit-learn** - Machine learning (Random Forest)
+- **Google Generative AI** - Gemini 1.5 Flash for advanced reasoning
+- **SpeechRecognition** - Voice command processing
+- **Twilio** - SMS Gateway integration
 - **Plotly** - Interactive visualizations
+- **Streamlit Option Menu** - Responsive navigation
 
 ---
 
@@ -218,9 +234,8 @@ Our goal is to help Bangladesh achieve **10x agricultural productivity growth** 
 ### Phase 1: Mobile App Development (Q1-Q2 2026)
 
 - **Offline-First Architecture:** Local database caching for areas with poor connectivity
-- **Progressive Web App (PWA):** Works on both smartphones and feature phones
-- **SMS Gateway Integration:** Real SMS alerts without internet dependency
-- **Voice Commands:** Bengali voice input for illiterate farmers
+- **Progressive Web App (PWA):** Enhanced specific formatting for mobile screens
+- **Call Center Integration:** Direct line to agricultural experts
 
 ### Phase 2: Data Enhancement (Q2-Q3 2026)
 
@@ -298,4 +313,4 @@ We welcome contributions! If you'd like to improve this project:
 
 _"Technology should empower those who feed nations"_
 
-</div>and seasonality detection
+</div>
