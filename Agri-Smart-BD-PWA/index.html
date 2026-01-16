@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AgriSmart BD</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#11998e">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <style>
+        /* Reset and Full Screen Setup */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #11998e; /* Match your app brand color */
+        }
+        
+        /* The Iframe Container */
+        #app-frame {
+            width: 100vw;
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            border: none;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <iframe 
+        id="app-frame"
+        src="https://mxb2026-dhaka-trio-leveling-agrismartbd-g4hhxqjg5dnfhzdjtl9upa.streamlit.app/?embed=true"
+        allow="camera; microphone; geolocation"
+    ></iframe>
+
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered!', reg))
+                    .catch(err => console.log('SW Failed!', err));
+            });
+        }
+    </script>
+</body>
+</html>
